@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Sharing Platform - Borrow Request</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+
+</head>
+
+<body style="Padding: 18px 0px 0px">
+    <div class="container">
+        <!-- Back Button -->
+        <a href="{{ url_for('index') }}" class="back-button"><i class="fas fa-arrow-left me-2"></i>Back to Home</a>
+
+
+   <!-- Flash Messages -->
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="flash-message flash-{{ category }}">
+        <i class="fas fa-info-circle me-2"></i>{{ message }}
+    </div>
+    {% endfor %}
+
+        <!-- Borrow Request Form Container -->
+        <div class="borrow-container">
+            <!-- Header -->
+            <div class="borrow-header">
+                <h1><i class="fas fa-calendar-check me-3"></i>Borrow Request</h1>
+                <p>Schedule your book exchange</p>
+            </div>
+
+            <!-- Body -->
+            <div class="borrow-body">
+                <!-- Book Information Card -->
+                <div class="book-info-card">
+                    <h3><i class="fas fa-book me-2"></i>Book Details</h3>
+                    <div class="book-detail">
+                        <i class="fas fa-bookmark"></i>
+                        <strong>Title:</strong> <span id="bookTitle">{{ book['title'] }}</span>
+                    </div>
+                    <div class="book-detail">
+                        <i class="fas fa-user"></i>
+                        <strong>Author:</strong> <span id="bookAuthor">{{ book['author'] }}</span>
+                    </div>
+                    <div class="book-detail">
+                        <i class="fas fa-tag"></i>
+                        <strong>Category:</strong> <span id="bookCategory">{{ book['category'] }}</span>
+                    </div>
+                    <div class="book-detail">
+                        <i class="fas fa-book"></i>
+                        <strong>Type:</strong> <span class="badge bg-success">{{ book['type'] }}</span>
+                    </div>
+                </div>
+
+                <!-- Borrow Request Form -->
+                <form action="{{ url_for('borrow', book_id=book['id']) }}" method="POST">
+                    <h4 class="mb-4" style="color: var(--primary-blue); font-weight: bold;">
+                        <i class="fas fa-clipboard-list me-2 form-head"></i>Propose Exchange Details
+                    </h4>
+
+                    <!-- Date Input -->
+                    <div class="form-section">
+                        <label for="borrowDate" class="form-label">
+                            <i class="fas fa-calendar-day me-2"></i>Preferred Date
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-calendar"></i>
+                            <input type="date" class="form-control" id="borrowDate" name="borrowDate" required>
+                        </div>
+                    </div>
+
+                    <!-- Time Input -->
+                    <div class="form-section">
+                        <label for="borrowTime" class="form-label">
+                            <i class="fas fa-clock me-2"></i>Preferred Time
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-clock"></i>
+                            <input type="time" class="form-control" id="borrowTime" name="borrowTime" required>
+                        </div>
+                    </div>
+
+                    <!-- Location Input -->
+                    <div class="form-section">
+                        <label for="borrowLocation" class="form-label">
+                            <i class="fas fa-map-marker-alt me-2"></i>Meeting Location
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-map-pin"></i>
+                            <input type="text" class="form-control" id="borrowLocation" name="borrowLocation"
+                                placeholder="e.g., University Library, etc." required>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Additional Notes (Optional) -->
+                    <div class="form-section">
+                        <label for="notes" class="form-label">
+                            <i class="fas fa-comment me-2"></i>Additional Notes (Optional)
+                        </label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                            placeholder="Any special instructions or preferences..."></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-submit">
+                        <i class="fas fa-paper-plane me-2"></i>Submit Request
+                    </button>
+                    <a href="index.html" class="btn-cancel">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+ 
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!--  JavaScript to update book details from URL -->
+    <!-- <script>
+       
+        const urlParams = new URLSearchParams(window.location.search);
+
+       
+        const bookTitle = urlParams.get('book');
+        const bookAuthor = urlParams.get('author');
+        const bookCategory = urlParams.get('category');
+
+        
+        if (bookTitle) {
+            document.getElementById('bookTitle').textContent = bookTitle;
+        }
+        if (bookAuthor) {
+            document.getElementById('bookAuthor').textContent = bookAuthor;
+        }
+        if (bookCategory) {
+            document.getElementById('bookCategory').textContent = bookCategory;
+        }
+    </script> -->
+</body>
+
+</html>

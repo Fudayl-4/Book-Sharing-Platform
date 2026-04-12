@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Sharing Platform - Add Book</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body style="padding: 18px 0px 0px">
+    <div class="container">
+
+        <!-- Back Button -->
+        <a href="{{ url_for('dashboard') }}" class="back-button">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+
+        <!-- Flash Messages -->
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="flash-message flash-{{ category }}">
+                <i class="fas fa-info-circle me-2"></i>{{ message }}
+            </div>
+        {% endfor %}
+
+        <!-- Main Form Container -->
+        <div class="borrow-container">
+
+            <!-- Header -->
+            <div class="borrow-header">
+                <h1><i class="fas fa-plus-circle me-3"></i>Add a Book</h1>
+                <p>Share your book with the community</p>
+            </div>
+
+            <!-- Form Body -->
+            <div class="borrow-body">
+                <form action="{{ url_for('add_book') }}" method="POST" enctype="multipart/form-data">
+
+                    <!-- Title -->
+                    <div class="form-section">
+                        <label for="title" class="form-label">
+                            <i class="fas fa-bookmark me-2"></i>Book Title
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-book"></i>
+                            <input type="text" class="form-control" id="title" name="title"
+                                placeholder="e.g., Atomic Habits" required>
+                        </div>
+                    </div>
+
+                    <!-- Author -->
+                    <div class="form-section">
+                        <label for="author" class="form-label">
+                            <i class="fas fa-user me-2"></i>Author
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-pen"></i>
+                            <input type="text" class="form-control" id="author" name="author"
+                                placeholder="e.g., James Clear" required>
+                        </div>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="form-section">
+                        <label for="category" class="form-label">
+                            <i class="fas fa-tag me-2"></i>Category
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-list"></i>
+                            <select class="form-control" id="category" name="category" required>
+                                <option value="" disabled selected>Select a category</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Programming">Programming</option>
+                                <option value="Self Improvement">Self Improvement</option>
+                                <option value="Productivity">Productivity</option>
+                                <option value="Business">Business</option>
+                                <option value="Science">Science</option>
+                                <option value="Fiction">Fiction</option>
+                                <option value="History">History</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Book Type -->
+                    <div class="form-section">
+                        <label class="form-label">
+                            <i class="fas fa-layer-group me-2"></i>Book Type
+                        </label>
+                        <div class="book-type-options">
+                            <!-- Physical Option -->
+                            <div class="type-option" id="option-physical" onclick="selectType('physical')">
+                                <i class="fas fa-book-open"></i>
+                                <span>Physical Book</span>
+                                <small>Exchange in person</small>
+                            </div>
+                            <!-- Digital Option -->
+                            <div class="type-option" id="option-digital" onclick="selectType('digital')">
+                                <i class="fas fa-laptop"></i>
+                                <span>Digital Book</span>
+                                <small>Share download link</small>
+                            </div>
+                        </div>
+                        <!-- Hidden input that stores the selected type -->
+                        <input type="hidden" id="type" name="type" required>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Physical Book Section - only shows when Physical is selected -->
+                    <div class="form-section" id="physical-section" style="display: none;">
+                        <label for="location_notes" class="form-label">
+                            <i class="fas fa-map-marker-alt me-2"></i>Location / Availability Notes
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-map-pin"></i>
+                            <input type="text" class="form-control" id="location_notes" name="location_notes"
+                                placeholder="e.g., Available at Gulshan, Karachi">
+                        </div>
+                    </div>
+
+                    <!-- Digital Book Section - only shows when Digital is selected -->
+                    <div class="form-section" id="digital-section" style="display: none;">
+                        <label for="download_link" class="form-label">
+                            <i class="fas fa-link me-2"></i>Download Link
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-globe"></i>
+                            <input type="url" class="form-control" id="download_link" name="download_link"
+                                placeholder="e.g., https://drive.google.com/...">
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane me-2"></i>List My Book
+                    </button>
+
+                    <a href="{{ url_for('dashboard') }}" class="btn-cancel">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // This function runs when user clicks Physical or Digital
+        function selectType(type) {
+
+            // Remove 'selected' styling from both options first
+            document.getElementById('option-physical').classList.remove('type-selected');
+            document.getElementById('option-digital').classList.remove('type-selected');
+
+            // Hide both extra sections first
+            document.getElementById('physical-section').style.display = 'none';
+            document.getElementById('digital-section').style.display = 'none';
+
+            // Now highlight the one they clicked
+            document.getElementById('option-' + type).classList.add('type-selected');
+
+            // Show the relevant section
+            document.getElementById(type + '-section').style.display = 'block';
+
+            // Store the selected type in the hidden input so Flask receives it
+            document.getElementById('type').value = type;
+        }
+    </script>
+
+</body>
+</html>

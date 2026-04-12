@@ -1,0 +1,13 @@
+@app.route('/borrow/<int:book_id>', methods=['GET', 'POST'])
+@login_required
+def borrow(book_id):
+    conn = get_db_connection()
+    book = conn.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
+    conn.close()
+
+    if book is None:
+        flash('Book not found!', 'danger')
+        return redirect(url_for('index'))
+
+    return render_template('borrow.html', book=book)
+    /// borrow route app.py

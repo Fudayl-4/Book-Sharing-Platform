@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Sharing Platform - Edit Book</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body style="padding: 18px 0px 0px">
+    <div class="container">
+
+        <!-- Back Button -->
+        <a href="{{ url_for('dashboard') }}" class="back-button">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+
+        <!-- Flash Messages -->
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="flash-message flash-{{ category }}">
+                <i class="fas fa-info-circle me-2"></i>{{ message }}
+            </div>
+        {% endfor %}
+
+        <div class="borrow-container">
+
+            <!-- Header -->
+            <div class="borrow-header">
+                <h1><i class="fas fa-edit me-3"></i>Edit Book</h1>
+                <p>Update your book details</p>
+            </div>
+
+            <!-- Form Body -->
+            <div class="borrow-body">
+                <form action="{{ url_for('edit_book', book_id=book['id']) }}" method="POST">
+
+                    <!-- Title - pre-filled with existing value -->
+                    <div class="form-section">
+                        <label for="title" class="form-label">
+                            <i class="fas fa-bookmark me-2"></i>Book Title
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-book"></i>
+                            <input type="text" class="form-control" id="title" name="title"
+                                value="{{ book['title'] }}" required>
+                        </div>
+                    </div>
+
+                    <!-- Author -->
+                    <div class="form-section">
+                        <label for="author" class="form-label">
+                            <i class="fas fa-user me-2"></i>Author
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-pen"></i>
+                            <input type="text" class="form-control" id="author" name="author"
+                                value="{{ book['author'] }}" required>
+                        </div>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="form-section">
+                        <label for="category" class="form-label">
+                            <i class="fas fa-tag me-2"></i>Category
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-list"></i>
+                            <select class="form-control" id="category" name="category" required>
+                                <option value="Computer Science"   {% if book['category'] == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                                <option value="Programming"        {% if book['category'] == 'Programming' %}selected{% endif %}>Programming</option>
+                                <option value="Self Improvement"   {% if book['category'] == 'Self Improvement' %}selected{% endif %}>Self Improvement</option>
+                                <option value="Productivity"       {% if book['category'] == 'Productivity' %}selected{% endif %}>Productivity</option>
+                                <option value="Business"           {% if book['category'] == 'Business' %}selected{% endif %}>Business</option>
+                                <option value="Science"            {% if book['category'] == 'Science' %}selected{% endif %}>Science</option>
+                                <option value="Fiction"            {% if book['category'] == 'Fiction' %}selected{% endif %}>Fiction</option>
+                                <option value="History"            {% if book['category'] == 'History' %}selected{% endif %}>History</option>
+                                <option value="Other"              {% if book['category'] == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Physical book field -->
+                    {% if book['type']|lower == 'physical' %}
+                    <div class="form-section">
+                        <label for="location_notes" class="form-label">
+                            <i class="fas fa-map-marker-alt me-2"></i>Location / Availability Notes
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-map-pin"></i>
+                            <input type="text" class="form-control" id="location_notes" name="location_notes"
+                                value="{{ book['location_notes'] or '' }}">
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Digital book field -->
+                    {% if book['type']|lower == 'digital' %}
+                    <div class="form-section">
+                        <label for="download_link" class="form-label">
+                            <i class="fas fa-link me-2"></i>Download Link
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-globe"></i>
+                            <input type="url" class="form-control" id="download_link" name="download_link"
+                                value="{{ book['file_path'] or '' }}">
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Submit -->
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+
+                    <a href="{{ url_for('dashboard') }}" class="btn-cancel">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
