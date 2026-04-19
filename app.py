@@ -125,27 +125,336 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
-# Dashboard (requires login)
+# Dashboard
 @app.route('/dashboard')
 @login_required
 def dashboard():
     conn = get_db_connection()
-    
-    # Get user's books
-    my_books = conn.execute('SELECT * FROM books WHERE owner_id = ?', 
-                           (current_user.id,)).fetchall()
-    
-    # Get borrowed books
+
+    # Get owner's books, and if borrowed, also fetch exchange details
+    my_books = conn.execute('''
+    SELECT b.*,
+           br.proposed_date, br.proposed_time, br.proposed_location,
+           u.username as borrower_name
+    FROM books b
+    LEFT JOIN borrow_requests br ON br.book_id = b.id AND br.status = "accepted"
+    LEFT JOIN users u ON br.borrower_id = u.id
+    WHERE b.owner_id = ?
+''', (current_user.id,)).fetchall()
+
+
+    # Get borrowed books WITH exchange details
     borrowed_books = conn.execute('''
-        SELECT b.*, u.username as owner_name 
+        SELECT b.*, u.username as owner_name,
+               br.proposed_date, br.proposed_time, br.proposed_location
         FROM borrow_transactions bt
         JOIN books b ON bt.book_id = b.id
         JOIN users u ON b.owner_id = u.id
+        JOIN borrow_requests br ON bt.request_id = br.id
         WHERE bt.borrower_id = ? AND bt.status = "borrowed"
     ''', (current_user.id,)).fetchall()
-    
+
+    # Get incoming borrow requests on owner's books
+    incoming_requests = conn.execute('''
+        SELECT br.*, b.title as book_title, b.author as book_author,
+               u.username as borrower_name
+        FROM borrow_requests br
+        JOIN books b ON br.book_id = b.id
+        JOIN users u ON br.borrower_id = u.id
+        WHERE b.owner_id = ? AND br.status IN ("pending", "alternative_suggested")
+    ''', (current_user.id,)).fetchall()
+
+    # Get alternative suggestions waiting for borrower response
+    pending_alternatives = conn.execute('''
+        SELECT br.*, b.title as book_title
+        FROM borrow_requests br
+        JOIN books b ON br.book_id = b.id
+        WHERE br.borrower_id = ? AND br.status = "alternative_suggested"
+''', (current_user.id,)).fetchall()
+
     conn.close()
-    return render_template('dashboard.html', my_books=my_books, borrowed_books=borrowed_books)
+    return render_template('dashboard.html',
+                       my_books=my_books,
+                       borrowed_books=borrowed_books,
+                       incoming_requests=incoming_requests,
+                       pending_alternatives=pending_alternatives)
+
+
+# Accept a borrow request
+@app.route('/accept_request/<int:request_id>')
+@login_required
+def accept_request(request_id):
+
+    conn = get_db_connection()
+
+    borrow_req = conn.execute('SELECT * FROM borrow_requests WHERE id = ?',
+                              (request_id,)).fetchone()
+
+    if borrow_req is None:
+        flash('Request not found!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    book = conn.execute('SELECT * FROM books WHERE id = ?',
+                        (borrow_req['book_id'],)).fetchone()
+
+    # Owner accepts pending request OR borrower accepts alternative suggestion
+    if book['owner_id'] != current_user.id and borrow_req['borrower_id'] != current_user.id:
+        flash('You are not authorized to do this!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    # Mark request as accepted
+    conn.execute('UPDATE borrow_requests SET status = "accepted" WHERE id = ?',
+                 (request_id,))
+
+    # Mark book as borrowed
+    conn.execute('UPDATE books SET status = "borrowed" WHERE id = ?',
+                 (borrow_req['book_id'],))
+
+    # Create transaction record
+    conn.execute('''
+        INSERT INTO borrow_transactions (book_id, borrower_id, owner_id, request_id, status)
+        VALUES (?, ?, ?, ?, "borrowed")
+    ''', (borrow_req['book_id'], borrow_req['borrower_id'], book['owner_id'], request_id))
+
+    conn.commit()
+    conn.close()
+
+    flash('Request accepted! Book is now marked as borrowed.', 'success')
+    return redirect(url_for('dashboard'))
+
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+
+    conn = get_db_connection()
+
+    if request.method == 'POST':
+
+        username     = request.form['username']
+        email        = request.form['email']
+        new_password = request.form['new_password']
+
+        if new_password:
+            hashed_password = generate_password_hash(new_password)
+            conn.execute('''
+                UPDATE users SET username = ?, email = ?, password = ?
+                WHERE id = ?
+            ''', (username, email, hashed_password, current_user.id))
+        else:
+            conn.execute('''
+                UPDATE users SET username = ?, email = ?
+                WHERE id = ?
+            ''', (username, email, current_user.id))
+
+        conn.commit()
+        conn.close()
+
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('profile'))
+
+    # GET request — fetch current user data to pre-fill the form
+    user = conn.execute('SELECT * FROM users WHERE id = ?',
+                        (current_user.id,)).fetchone()
+    conn.close()
+    return render_template('profile.html', user=user)
+
+# Owner accepts a borrow request
+    @app.route('/accept_request/<int:request_id>')
+    @login_required
+    def accept_request(request_id):
+
+      conn = get_db_connection()
+
+    # Get the request details
+    borrow_req = conn.execute('SELECT * FROM borrow_requests WHERE id = ?',
+                              (request_id,)).fetchone()
+
+    if borrow_req is None:
+        flash('Request not found!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    # Security check — make sure current user owns the book
+    book = conn.execute('SELECT * FROM books WHERE id = ?',
+                        (borrow_req['book_id'],)).fetchone()
+
+    if book['owner_id'] != current_user.id:
+        flash('You are not authorized to do this!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    # Mark the request as accepted
+    conn.execute('UPDATE borrow_requests SET status = "accepted" WHERE id = ?',
+                 (request_id,))
+
+    # Mark the book as borrowed so it disappears from home page
+    conn.execute('UPDATE books SET status = "borrowed" WHERE id = ?',
+                 (borrow_req['book_id'],))
+
+    # Create a transaction record for tracking
+    conn.execute('''
+        INSERT INTO borrow_transactions (book_id, borrower_id, owner_id, request_id, status)
+        VALUES (?, ?, ?, ?, "borrowed")
+    ''', (borrow_req['book_id'], borrow_req['borrower_id'], current_user.id, request_id))
+
+    conn.commit()
+    conn.close()
+
+    flash('Request accepted! Book is now marked as borrowed.', 'success')
+    return redirect(url_for('dashboard'))
+
+
+# Owner rejects a borrow request
+@app.route('/reject_request/<int:request_id>')
+@login_required
+def reject_request(request_id):
+
+    conn = get_db_connection()
+
+    borrow_req = conn.execute('SELECT * FROM borrow_requests WHERE id = ?',
+                              (request_id,)).fetchone()
+
+    if borrow_req is None:
+        flash('Request not found!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    # Security check
+    book = conn.execute('SELECT * FROM books WHERE id = ?',
+                        (borrow_req['book_id'],)).fetchone()
+
+    if book['owner_id'] != current_user.id:
+        flash('You are not authorized to do this!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    # Simply mark request as rejected — book stays available
+    conn.execute('UPDATE borrow_requests SET status = "rejected" WHERE id = ?',
+                 (request_id,))
+
+    conn.commit()
+    conn.close()
+
+    flash('Request rejected.', 'info')
+    return redirect(url_for('dashboard'))
+
+# Owner suggests alternative date/time/location
+@app.route('/suggest_alternative/<int:request_id>', methods=['GET', 'POST'])
+@login_required
+def suggest_alternative(request_id):
+
+    conn = get_db_connection()
+
+    # Get the request
+    borrow_req = conn.execute('SELECT * FROM borrow_requests WHERE id = ?',
+                              (request_id,)).fetchone()
+
+    if borrow_req is None:
+        flash('Request not found!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    # Security check — only book owner can suggest alternative
+    book = conn.execute('SELECT * FROM books WHERE id = ?',
+                        (borrow_req['book_id'],)).fetchone()
+
+    if book['owner_id'] != current_user.id:
+        flash('You are not authorized to do this!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+
+        new_date     = request.form['proposed_date']
+        new_time     = request.form['proposed_time']
+        new_location = request.form['proposed_location']
+
+        # Update the request with new suggested details
+        # and mark status as "alternative_suggested" so borrower knows
+        conn.execute('''
+            UPDATE borrow_requests
+            SET proposed_date = ?, proposed_time = ?, proposed_location = ?,
+                status = "alternative_suggested"
+            WHERE id = ?
+        ''', (new_date, new_time, new_location, request_id))
+
+        conn.commit()
+        conn.close()
+
+        flash('Alternative suggested! Waiting for borrower to respond.', 'success')
+        return redirect(url_for('dashboard'))
+
+    conn.close()
+    return render_template('suggest_alternative.html', req=borrow_req, book=book)
+
+
+# Mark a physical book as returned - only owner can do this
+@app.route('/mark_returned/<int:book_id>')
+@login_required
+def mark_returned(book_id):
+
+    conn = get_db_connection()
+
+    # Security check — make sure current user owns this book
+    book = conn.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
+
+    if book['owner_id'] != current_user.id:
+        flash('You are not authorized to do this!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    # Mark book as available again
+    conn.execute('UPDATE books SET status = "available" WHERE id = ?', (book_id,))
+
+    # Mark the transaction as returned
+    conn.execute('''
+        UPDATE borrow_transactions SET status = "returned"
+        WHERE book_id = ? AND status = "borrowed"
+    ''', (book_id,))
+
+    conn.commit()
+    conn.close()
+
+    flash('Book marked as returned and is available again!', 'success')
+    return redirect(url_for('dashboard'))
+
+
+# Mark digital book as returned - only borrower can do this
+@app.route('/return_digital/<int:book_id>')
+@login_required
+def return_digital(book_id):
+
+    conn = get_db_connection()
+
+    # Check the transaction belongs to current user
+    transaction = conn.execute('''
+        SELECT * FROM borrow_transactions
+        WHERE book_id = ? AND borrower_id = ? AND status = "borrowed"
+    ''', (book_id, current_user.id)).fetchone()
+
+    if transaction is None:
+        flash('No active borrow found!', 'danger')
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    # Mark book as available again
+    conn.execute('UPDATE books SET status = "available" WHERE id = ?', (book_id,))
+
+    # Mark transaction as returned
+    conn.execute('''
+        UPDATE borrow_transactions SET status = "returned"
+        WHERE book_id = ? AND borrower_id = ? AND status = "borrowed"
+    ''', (book_id, current_user.id))
+
+    conn.commit()
+    conn.close()
+
+    flash('Digital book marked as returned!', 'success')
+    return redirect(url_for('dashboard'))
+
 
 #Borrow Page
 # Borrow page - shows the form AND handles form submission
@@ -164,6 +473,12 @@ def borrow(book_id):
         flash('Book not found!', 'danger')
         conn.close()
         return redirect(url_for('index'))
+    
+    # Prevent owner from borrowing their own book
+    if book['owner_id'] == current_user.id:
+       flash('You cannot borrow your own book!', 'danger')
+       conn.close()
+       return redirect(url_for('index'))
 
     # ---------- When user submits the form (POST request) ----------
     if request.method == 'POST':

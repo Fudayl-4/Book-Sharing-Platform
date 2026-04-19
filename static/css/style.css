@@ -113,6 +113,8 @@
         font-size: 1.05rem;
         background: transparent;
         outline: none;
+        border-radius: 50px;
+        margin-right: 6px;
     }
 
     .btn-search {
@@ -553,6 +555,142 @@
         color: #fff;
     }
 
+    /* Exchange details box */
+    .exchange-details {
+        background: #f0f6ff;
+        border-left: 4px solid var(--primary-blue);
+        border-radius: 8px;
+        padding: 12px 15px;
+        margin-top: 10px;
+    }
+
+    .exchange-title {
+        font-weight: 600;
+        color: var(--primary-blue);
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+    }
+
+    .exchange-meta {
+        font-size: 0.85rem;
+        color: #555;
+        margin-bottom: 4px;
+    }
+
+    .exchange-meta i {
+        color: var(--primary-blue);
+        width: 16px;
+    }
+
+    /* Mark as Returned button */
+    .btn-returned {
+        display: inline-block;
+        margin-top: 10px;
+        background: white;
+        color: #28a745;
+        border: 2px solid #28a745;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-returned:hover {
+        background: #28a745;
+        color: white;
+    }
+
+    /* Incoming Requests Section */
+    .requests-section {
+        margin-bottom: 30px;
+    }
+
+    .requests-heading {
+        color: var(--primary-blue);
+        font-weight: 700;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .request-card {
+        background: #f8f9ff;
+        border: 2px solid #e0e8f5;
+        border-left: 5px solid var(--primary-blue);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .request-info {
+        flex: 1;
+    }
+
+    .request-book {
+        font-size: 1rem;
+        color: var(--primary-dark);
+        margin-bottom: 6px;
+    }
+
+    .request-meta {
+        font-size: 0.88rem;
+        color: #666;
+        margin-bottom: 4px;
+    }
+
+    .request-meta i {
+        color: var(--primary-blue);
+        width: 16px;
+    }
+
+    .request-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .btn-accept {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .btn-accept:hover {
+        background: #1e7e34;
+        color: white;
+    }
+
+    .btn-reject {
+        background: white;
+        color: #dc3545;
+        border: 2px solid #dc3545;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .btn-reject:hover {
+        background: #dc3545;
+        color: white;
+    }
+
     /* Add Book Page */
     .book-type-options {
         display: flex;
@@ -668,7 +806,64 @@
         margin-left: 5px;
     }
 
+    /* Profile Page */
+    /* Profile Page */
+    .profile-avatar {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px 0 10px;
+    }
 
+    .avatar-circle {
+        width: 90px;
+        height: 90px;
+        background: linear-gradient(135deg, var(--primary-blue), var(--accent-navy));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+    }
+
+    .avatar-circle i {
+        font-size: 2.5rem;
+        color: white;
+    }
+
+    .avatar-name {
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin-bottom: 4px;
+    }
+
+    .avatar-role {
+        background: #e8f0fb;
+        color: var(--primary-blue);
+        padding: 3px 14px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-transform: capitalize;
+    }
+
+    /* Suggest Alternative button */
+    .btn-suggest {
+        background: white;
+        color: var(--primary-blue);
+        border: 2px solid var(--primary-blue);
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .btn-suggest:hover {
+        background: var(--primary-blue);
+        color: white;
+    }
 
     /* Responsive */
     @media (max-width: 1200px) {

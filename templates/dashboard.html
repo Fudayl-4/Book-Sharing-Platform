@@ -26,6 +26,9 @@
                 <a href="{{ url_for('dashboard') }}" class="btn-login">
                     <i class="fas fa-user"></i> Dashboard
                 </a>
+                <a href="{{ url_for('profile') }}" class="btn-login ms-2">
+                    <i class="fas fa-user-circle me-1"></i> My Profile
+                </a>
                 <a href="{{ url_for('logout') }}" class="btn btn-log ms-2">Logout</a>
                 {% else %}
                 <a href="{{ url_for('login') }}" class="btn-login">
@@ -48,6 +51,59 @@
                 {% endfor %}
                 {% endif %}
                 {% endwith %}
+
+                <!-- Incoming Borrow Requests Section -->
+                {% if incoming_requests %}
+                <div class="requests-section">
+                    <h4 class="requests-heading">
+                        <i class="fas fa-bell me-2"></i>
+                        Incoming Borrow Requests ({{ incoming_requests|length }})
+                    </h4>
+
+                    {% for req in incoming_requests %}
+                    <div class="request-card">
+
+                        <!-- Book and borrower info -->
+                        <div class="request-info">
+                            <p class="request-book">
+                                <i class="fas fa-book me-2"></i>
+                                <strong>{{ req['book_title'] }}</strong> by {{ req['book_author'] }}
+                            </p>
+                            <p class="request-meta">
+                                <i class="fas fa-user me-2"></i>Requested by: <strong>{{ req['borrower_name']
+                                    }}</strong>
+                            </p>
+                            <p class="request-meta">
+                                <i class="fas fa-calendar me-2"></i>Date: {{ req['proposed_date'] }}
+                            </p>
+                            <p class="request-meta">
+                                <i class="fas fa-clock me-2"></i>Time: {{ req['proposed_time'] }}
+                            </p>
+                            <p class="request-meta">
+                                <i class="fas fa-map-marker-alt me-2"></i>Location: {{ req['proposed_location'] }}
+                            </p>
+                        </div>
+
+                        <!-- Accept, Reject and Suggest Alternative buttons -->
+                        <div class="request-actions">
+                            <a href="{{ url_for('accept_request', request_id=req['id']) }}" class="btn-accept">
+                                <i class="fas fa-check me-1"></i>Accept
+                            </a>
+                            <a href="{{ url_for('suggest_alternative', request_id=req['id']) }}" class="btn-suggest">
+                                <i class="fas fa-calendar-alt me-1"></i>Suggest Alternative
+                            </a>
+                            <a href="{{ url_for('reject_request', request_id=req['id']) }}" class="btn-reject"
+                                onclick="return confirm('Reject this request?')">
+                                <i class="fas fa-times me-1"></i>Reject
+                            </a>
+                        </div>
+
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+
                 <section class="book-sec">
                     <div class="row mt-4">
                         <!-- My Books Section -->
@@ -62,14 +118,47 @@
                                         {% for book in my_books %}
                                         <li class="list-group-item">
 
-                                            <!-- Book Info -->
                                             <strong>{{ book['title'] }}</strong><br>
                                             <small>by {{ book['author'] }} | {{ book['category'] }}</small><br>
                                             <span class="book-type type-{{ book['type']|lower }}">{{ book['type']
                                                 }}</span>
                                             <span class="status-badge">{{ book['status'] }}</span>
 
-                                            <!-- Edit and Delete Buttons -->
+                                            <!-- Show exchange details if book is currently borrowed -->
+                                            {% if book['status']|lower == 'borrowed' %}
+                                            <div class="exchange-details">
+                                                <p class="exchange-title">
+                                                    <i class="fas fa-calendar-check me-2"></i>Currently Borrowed
+                                                </p>
+                                                <p class="exchange-meta">
+                                                    <i class="fas fa-user me-2"></i>Borrowed by: <strong>{{
+                                                        book['borrower_name'] }}</strong>
+                                                </p>
+                                                <p class="exchange-meta">
+                                                    <i class="fas fa-calendar me-2"></i>Date: {{ book['proposed_date']
+                                                    }}
+                                                </p>
+                                                <p class="exchange-meta">
+                                                    <i class="fas fa-clock me-2"></i>Time: {{ book['proposed_time'] }}
+                                                </p>
+                                                <p class="exchange-meta">
+                                                    <i class="fas fa-map-marker-alt me-2"></i>Location: {{
+                                                    book['proposed_location'] }}
+                                                </p>
+
+                                                <!-- Only show for physical books -->
+                                                {% if book['type']|lower == 'physical' %}
+                                                <a href="{{ url_for('mark_returned', book_id=book['id']) }}"
+                                                    class="btn-returned"
+                                                    onclick="return confirm('Confirm that you received the book back?')">
+                                                    <i class="fas fa-check-circle me-1"></i>Mark as Returned
+                                                </a>
+                                                {% endif %}
+
+                                            </div>
+                                            {% endif %}
+                                            <!-- Edit and Delete only if book is available -->
+                                            {% if book['status']|lower == 'available' %}
                                             <div class="book-actions">
                                                 <a href="{{ url_for('edit_book', book_id=book['id']) }}"
                                                     class="btn-edit">
@@ -81,6 +170,7 @@
                                                     <i class="fas fa-trash me-1"></i>Delete
                                                 </a>
                                             </div>
+                                            {% endif %}
 
                                         </li>
                                         {% endfor %}
@@ -105,15 +195,89 @@
                                     <ul class="list-group">
                                         {% for book in borrowed_books %}
                                         <li class="list-group-item">
-                                            <strong>{{ book.title }}</strong><br>
-                                            <small>by {{ book.author }}</small><br>
-                                            <small class="text-muted">Owner: {{ book.owner_name }}</small>
+
+                                            <!-- Book Info -->
+                                            <strong>{{ book['title'] }}</strong><br>
+                                            <small>by {{ book['author'] }}</small><br>
+                                            <small>Owner: <strong>{{ book['owner_name'] }}</strong></small>
+
+                                            <!-- Exchange Details Box -->
+                                            <div class="exchange-details">
+                                                <p class="exchange-title">
+                                                    <i class="fas fa-calendar-check me-2"></i>Exchange Details
+                                                </p>
+                                                <p class="exchange-meta">
+                                                    <i class="fas fa-calendar me-2"></i>Date: {{ book['proposed_date']
+                                                    }}
+                                                </p>
+                                                <p class="exchange-meta">
+                                                    <i class="fas fa-clock me-2"></i>Time: {{ book['proposed_time'] }}
+                                                </p>
+                                                <p class="exchange-meta">
+                                                    <i class="fas fa-map-marker-alt me-2"></i>Location: {{
+                                                    book['proposed_location'] }}
+                                                </p>
+
+                                                <!-- Only digital books have borrower return button -->
+                                                {% if book['type']|lower == 'digital' %}
+                                                <a href="{{ url_for('return_digital', book_id=book['id']) }}"
+                                                    class="btn-returned"
+                                                    onclick="return confirm('Mark this digital book as returned?')">
+                                                    <i class="fas fa-undo me-1"></i>Mark as Returned
+                                                </a>
+                                                {% endif %}
+
+                                            </div>
+
                                         </li>
                                         {% endfor %}
                                     </ul>
                                     {% else %}
                                     <p class="text-muted">You haven't borrowed any books yet.</p>
                                     <a href="{{ url_for('index') }}" class="btn btn-login">Browse Books</a>
+                                    {% endif %}
+
+                                    <!-- Show alternative suggestions waiting for borrower response -->
+                                    {% if pending_alternatives %}
+                                    <div class="requests-section mt-3">
+                                        <h4 class="requests-heading">
+                                            <i class="fas fa-bell me-2"></i>
+                                            Owner Suggested Alternatives ({{ pending_alternatives|length }})
+                                        </h4>
+                                        {% for alt in pending_alternatives %}
+                                        <div class="request-card">
+                                            <div class="request-info">
+                                                <p class="request-book">
+                                                    <i class="fas fa-book me-2"></i>
+                                                    <strong>{{ alt['book_title'] }}</strong>
+                                                </p>
+                                                <p class="request-meta">
+                                                    <i class="fas fa-calendar me-2"></i>New Date: {{
+                                                    alt['proposed_date'] }}
+                                                </p>
+                                                <p class="request-meta">
+                                                    <i class="fas fa-clock me-2"></i>New Time: {{
+                                                    alt['proposed_time'] }}
+                                                </p>
+                                                <p class="request-meta">
+                                                    <i class="fas fa-map-marker-alt me-2"></i>New Location:
+                                                    {{ alt['proposed_location'] }}
+                                                </p>
+                                            </div>
+                                            <div class="request-actions">
+                                                <a href="{{ url_for('accept_request', request_id=alt['id']) }}"
+                                                    class="btn-accept">
+                                                    <i class="fas fa-check me-1"></i>Accept
+                                                </a>
+                                                <a href="{{ url_for('reject_request', request_id=alt['id']) }}"
+                                                    class="btn-reject"
+                                                    onclick="return confirm('Reject this alternative?')">
+                                                    <i class="fas fa-times me-1"></i>Reject
+                                                </a>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
                                     {% endif %}
                                 </div>
                             </div>
