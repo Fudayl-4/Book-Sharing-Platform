@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import sqlite3
+import os
 
 # Create Flask app
 app = Flask(__name__)
@@ -224,7 +226,7 @@ def accept_request(request_id):
     flash('Request accepted! Book is now marked as borrowed.', 'success')
     return redirect(url_for('dashboard'))
 
-
+#Manage Profile page
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
@@ -512,19 +514,15 @@ def borrow(book_id):
 
 # Add Book page - show form and handle submission
 @app.route('/add_book', methods=['GET', 'POST'])
-@login_required  # only logged in users can add books
+@login_required
 def add_book():
 
-    # When user submits the form
     if request.method == 'POST':
 
-        # Get basic book details from the form
-        title    = request.form['title']
-        author   = request.form['author']
-        category = request.form['category']
-        booktype = request.form['type']  # 'physical' or 'digital'
-
-        # These will be empty by default
+        title          = request.form['title']
+        author         = request.form['author']
+        category       = request.form['category']
+        booktype       = request.form['type']
         location_notes = None
         file_path      = None
 
@@ -532,11 +530,30 @@ def add_book():
         if booktype == 'physical':
             location_notes = request.form['location_notes']
 
-        # If digital book - get download link
+        # If digital book - get PDF upload or download link
         if booktype == 'digital':
-            file_path = request.form['download_link']
 
-        # Save the book into the database
+            pdf_file = request.files['pdf_file']
+
+            if pdf_file and pdf_file.filename != '':
+
+                # Validate it's a PDF
+                if not pdf_file.filename.endswith('.pdf'):
+                    flash('Only PDF files are allowed!', 'danger')
+                    return redirect(url_for('add_book'))
+
+                # Save the PDF to static/uploads/
+                pdf_filename  = secure_filename(pdf_file.filename)
+                upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+                os.makedirs(upload_folder, exist_ok=True)
+                pdf_file.save(os.path.join(upload_folder, pdf_filename))
+                file_path = 'uploads/' + pdf_filename
+
+            else:
+                # No PDF — use download link
+                file_path = request.form.get('download_link', '')
+
+        # Save book to database
         conn = get_db_connection()
         conn.execute('''
             INSERT INTO books (owner_id, title, author, category, type, location_notes, file_path, status)
@@ -549,8 +566,32 @@ def add_book():
         flash('Your book has been listed successfully!', 'success')
         return redirect(url_for('dashboard'))
 
-    # When user just opens the page - show the empty form
     return render_template('add_book.html')
+
+# Download digital book
+@app.route('/download/<int:book_id>')
+@login_required
+def download_book(book_id):
+
+    conn = get_db_connection()
+    book = conn.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
+    conn.close()
+
+    if book is None:
+        flash('Book not found!', 'danger')
+        return redirect(url_for('index'))
+
+    # If it's a link — redirect to it
+    if book['file_path'] and book['file_path'].startswith('http'):
+        return redirect(book['file_path'])
+
+    # If it's an uploaded PDF — serve the file
+    if book['file_path'] and book['file_path'].startswith('uploads/'):
+        return redirect(url_for('static', filename=book['file_path']))
+
+    flash('No download available for this book!', 'danger')
+    return redirect(url_for('index'))
+
 
 # Delete a book - only the owner can delete their own book
 @app.route('/delete_book/<int:book_id>')

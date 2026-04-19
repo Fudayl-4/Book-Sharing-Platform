@@ -865,6 +865,50 @@
         color: white;
     }
 
+    /* OR divider in digital section */
+    .digital-or {
+        text-align: center;
+        margin: 15px 0;
+        position: relative;
+    }
+
+    .digital-or::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: #e0e0e0;
+    }
+
+    .digital-or span {
+        background: white;
+        padding: 0 15px;
+        color: #888;
+        font-weight: 600;
+        position: relative;
+    }
+
+    /* Add Book button in dashboard header */
+    .btn-add-book {
+        background: white;
+        color: var(--primary-blue);
+        border: 2px solid white;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-add-book:hover {
+        background: var(--accent-navy);
+        color: white;
+        border-color: var(--accent-navy);
+    }
+
     /* Responsive */
     @media (max-width: 1200px) {
         .book-grid {

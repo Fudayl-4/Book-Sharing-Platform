@@ -20,9 +20,9 @@
 
         <!-- Flash Messages -->
         {% for category, message in get_flashed_messages(with_categories=true) %}
-            <div class="flash-message flash-{{ category }}">
-                <i class="fas fa-info-circle me-2"></i>{{ message }}
-            </div>
+        <div class="flash-message flash-{{ category }}">
+            <i class="fas fa-info-circle me-2"></i>{{ message }}
+        </div>
         {% endfor %}
 
         <!-- Main Form Container -->
@@ -123,14 +123,34 @@
 
                     <!-- Digital Book Section - only shows when Digital is selected -->
                     <div class="form-section" id="digital-section" style="display: none;">
-                        <label for="download_link" class="form-label">
-                            <i class="fas fa-link me-2"></i>Download Link
-                        </label>
-                        <div class="input-icon">
-                            <i class="fas fa-globe"></i>
-                            <input type="url" class="form-control" id="download_link" name="download_link"
-                                placeholder="e.g., https://drive.google.com/...">
+
+                        <!-- Option 1: Download Link -->
+                        <div class="form-section">
+                            <label for="download_link" class="form-label">
+                                <i class="fas fa-link me-2"></i>Download Link
+                            </label>
+                            <div class="input-icon">
+                                <i class="fas fa-globe"></i>
+                                <input type="url" class="form-control" id="download_link" name="download_link"
+                                    placeholder="e.g., https://drive.google.com/...">
+                            </div>
+                            <small class="image-hint">Paste a Google Drive or any public link</small>
                         </div>
+
+                        <!-- Divider -->
+                        <div class="digital-or">
+                            <span>OR</span>
+                        </div>
+
+                        <!-- Option 2: Upload PDF -->
+                        <div class="form-section">
+                            <label for="pdf_file" class="form-label">
+                                <i class="fas fa-file-pdf me-2"></i>Upload PDF File
+                            </label>
+                            <input type="file" class="form-control" id="pdf_file" name="pdf_file" accept=".pdf">
+                            <small class="image-hint">Only PDF files accepted. Max size: 10MB</small>
+                        </div>
+
                     </div>
 
                     <!-- Submit Button -->
@@ -173,4 +193,5 @@
     </script>
 
 </body>
+
 </html>

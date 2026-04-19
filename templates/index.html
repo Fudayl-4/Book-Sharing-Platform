@@ -110,10 +110,9 @@
                             <i class="fas fa-hand-holding me-2"></i>Request to Borrow
                         </a>
                         {% else %}
-                        <a href="#" class="btn-book-action">
-                            <i class="fas fa-download me-2"></i>Download Request
-                        </a>
-                        {% endif %}
+                        <a href="{{ url_for('download_book', book_id=book['id']) }}" class="btn-book-action">
+                            <i class="fas fa-download me-2"></i>Download Request</a>
+                            {% endif %}
                     </div>
                 </div>
                 {% endfor %}
