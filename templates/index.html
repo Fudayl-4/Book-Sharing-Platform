@@ -110,9 +110,16 @@
                             <i class="fas fa-hand-holding me-2"></i>Request to Borrow
                         </a>
                         {% else %}
-                        <a href="{{ url_for('download_book', book_id=book['id']) }}" class="btn-book-action">
-                            <i class="fas fa-download me-2"></i>Download Request</a>
-                            {% endif %}
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('digital_request', book_id=book['id']) }}" class="btn-book-action">
+                            <i class="fas fa-download me-2"></i>Download Request
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('login') }}" class="btn-book-action">
+                            <i class="fas fa-download me-2"></i>Download Request
+                        </a>
+                        {% endif %}
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

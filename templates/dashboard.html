@@ -30,6 +30,11 @@
                     <i class="fas fa-user-circle me-1"></i> My Profile
                 </a>
                 <a href="{{ url_for('logout') }}" class="btn btn-log ms-2">Logout</a>
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_dashboard') }}" class="btn-login ms-2">
+                    <i class="fas fa-shield-alt me-1"></i>Admin
+                </a>
+                {% endif %}
                 {% else %}
                 <a href="{{ url_for('login') }}" class="btn-login">
                     <i class="fas fa-sign-in-alt"></i> Login
@@ -196,17 +201,58 @@
                                     </h5>
                                 </div>
                                 <div class="card-body">
+
+                                    <!-- Download Request Status Section -->
+                                    {% if download_requests %}
+                                    <div class="requests-section mb-3">
+                                        <h6 class="requests-heading">
+                                            <i class="fas fa-download me-2"></i>My Download Requests
+                                        </h6>
+                                        {% for dr in download_requests %}
+                                        <div class="download-request-item">
+                                            <div class="request-info">
+                                                <p class="request-book">
+                                                    <i class="fas fa-book me-2"></i>
+                                                    <strong>{{ dr['book_title'] }}</strong>
+                                                </p>
+                                                <p class="request-meta">
+                                                    <i class="fas fa-user me-2"></i>Owner: {{ dr['owner_name'] }}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <!-- Status badge -->
+                                                {% if dr['status'] == 'pending' %}
+                                                <span class="status-pill pending">
+                                                    <i class="fas fa-clock me-1"></i>Pending
+                                                </span>
+                                                {% elif dr['status'] == 'accepted' %}
+                                                <span class="status-pill accepted">
+                                                    <i class="fas fa-check me-1"></i>Accepted
+                                                </span>
+                                                <a href="{{ url_for('download_book', book_id=dr['book_id']) }}"
+                                                    class="btn-download-now">
+                                                    <i class="fas fa-download me-1"></i>Download Now
+                                                </a>
+                                                {% elif dr['status'] == 'rejected' %}
+                                                <span class="status-pill rejected">
+                                                    <i class="fas fa-times me-1"></i>Rejected
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Physical Borrowed Books -->
                                     {% if borrowed_books %}
                                     <ul class="list-group">
                                         {% for book in borrowed_books %}
                                         <li class="list-group-item">
-
-                                            <!-- Book Info -->
                                             <strong>{{ book['title'] }}</strong><br>
                                             <small>by {{ book['author'] }}</small><br>
                                             <small>Owner: <strong>{{ book['owner_name'] }}</strong></small>
 
-                                            <!-- Exchange Details Box -->
                                             <div class="exchange-details">
                                                 <p class="exchange-title">
                                                     <i class="fas fa-calendar-check me-2"></i>Exchange Details
@@ -223,7 +269,6 @@
                                                     book['proposed_location'] }}
                                                 </p>
 
-                                                <!-- Only digital books have borrower return button -->
                                                 {% if book['type']|lower == 'digital' %}
                                                 <a href="{{ url_for('return_digital', book_id=book['id']) }}"
                                                     class="btn-returned"
@@ -231,9 +276,7 @@
                                                     <i class="fas fa-undo me-1"></i>Mark as Returned
                                                 </a>
                                                 {% endif %}
-
                                             </div>
-
                                         </li>
                                         {% endfor %}
                                     </ul>
@@ -242,48 +285,6 @@
                                     <a href="{{ url_for('index') }}" class="btn btn-login">Browse Books</a>
                                     {% endif %}
 
-                                    <!-- Show alternative suggestions waiting for borrower response -->
-                                    {% if pending_alternatives %}
-                                    <div class="requests-section mt-3">
-                                        <h4 class="requests-heading">
-                                            <i class="fas fa-bell me-2"></i>
-                                            Owner Suggested Alternatives ({{ pending_alternatives|length }})
-                                        </h4>
-                                        {% for alt in pending_alternatives %}
-                                        <div class="request-card">
-                                            <div class="request-info">
-                                                <p class="request-book">
-                                                    <i class="fas fa-book me-2"></i>
-                                                    <strong>{{ alt['book_title'] }}</strong>
-                                                </p>
-                                                <p class="request-meta">
-                                                    <i class="fas fa-calendar me-2"></i>New Date: {{
-                                                    alt['proposed_date'] }}
-                                                </p>
-                                                <p class="request-meta">
-                                                    <i class="fas fa-clock me-2"></i>New Time: {{
-                                                    alt['proposed_time'] }}
-                                                </p>
-                                                <p class="request-meta">
-                                                    <i class="fas fa-map-marker-alt me-2"></i>New Location:
-                                                    {{ alt['proposed_location'] }}
-                                                </p>
-                                            </div>
-                                            <div class="request-actions">
-                                                <a href="{{ url_for('accept_request', request_id=alt['id']) }}"
-                                                    class="btn-accept">
-                                                    <i class="fas fa-check me-1"></i>Accept
-                                                </a>
-                                                <a href="{{ url_for('reject_request', request_id=alt['id']) }}"
-                                                    class="btn-reject"
-                                                    onclick="return confirm('Reject this alternative?')">
-                                                    <i class="fas fa-times me-1"></i>Reject
-                                                </a>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
                                 </div>
                             </div>
                         </div>

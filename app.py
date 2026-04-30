@@ -109,6 +109,11 @@ def login():
         conn.close()
         
         if user and check_password_hash(user['password'], password):
+
+            # Check if user is blocked
+            if user['is_blocked'] == 1:
+                flash('Your account has been blocked. Contact admin.', 'danger')
+                return redirect(url_for('login'))
             user_obj = User(user['id'], user['username'], user['email'], user['role'])
             login_user(user_obj)
             flash('Login successful!', 'success')
@@ -131,6 +136,8 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Auto-return any digital books older than 14 days
+    auto_return_digital_books()
     conn = get_db_connection()
 
     # Get owner's books, and if borrowed, also fetch exchange details
@@ -174,12 +181,27 @@ def dashboard():
         WHERE br.borrower_id = ? AND br.status = "alternative_suggested"
 ''', (current_user.id,)).fetchall()
 
+    # Get borrower's digital download requests with status
+    download_requests = conn.execute('''
+        SELECT br.*, b.title as book_title, b.type as book_type,
+               u.username as owner_name
+        FROM borrow_requests br
+        JOIN books b ON br.book_id = b.id
+        JOIN users u ON b.owner_id = u.id   
+        WHERE br.borrower_id = ?
+        AND b.type IN ("digital", "Digital")
+        AND br.status IN ("pending", "accepted", "rejected")
+        ORDER BY br.request_date DESC
+    ''', (current_user.id,)).fetchall()
+
     conn.close()
     return render_template('dashboard.html',
                        my_books=my_books,
                        borrowed_books=borrowed_books,
                        incoming_requests=incoming_requests,
-                       pending_alternatives=pending_alternatives)
+                       pending_alternatives=pending_alternatives,
+                       download_requests=download_requests)
+
 
 
 # Accept a borrow request
@@ -210,15 +232,18 @@ def accept_request(request_id):
     conn.execute('UPDATE borrow_requests SET status = "accepted" WHERE id = ?',
                  (request_id,))
 
-    # Mark book as borrowed
-    conn.execute('UPDATE books SET status = "borrowed" WHERE id = ?',
-                 (borrow_req['book_id'],))
+    # Only mark as borrowed for physical books
+    # Digital books stay available so multiple users can borrow same book
+    book_type = book['type'].lower()
+    if book_type == 'physical':
+       conn.execute('UPDATE books SET status = "borrowed" WHERE id = ?',
+                     (borrow_req['book_id'],))
 
-    # Create transaction record
+    # Create transaction record with borrow_date set to now
     conn.execute('''
-        INSERT INTO borrow_transactions (book_id, borrower_id, owner_id, request_id, status)
-        VALUES (?, ?, ?, ?, "borrowed")
-    ''', (borrow_req['book_id'], borrow_req['borrower_id'], book['owner_id'], request_id))
+    INSERT INTO borrow_transactions (book_id, borrower_id, owner_id, request_id, status, borrow_date)
+    VALUES (?, ?, ?, ?, "borrowed", datetime("now"))
+''', (borrow_req['book_id'], borrow_req['borrower_id'], book['owner_id'], request_id))
 
     conn.commit()
     conn.close()
@@ -268,7 +293,7 @@ def profile():
     @login_required
     def accept_request(request_id):
 
-      conn = get_db_connection()
+     conn = get_db_connection() 
 
     # Get the request details
     borrow_req = conn.execute('SELECT * FROM borrow_requests WHERE id = ?',
@@ -592,6 +617,71 @@ def download_book(book_id):
     flash('No download available for this book!', 'danger')
     return redirect(url_for('index'))
 
+# ─── DIGITAL BOOK REQUEST ─────────────────────────────────────────────────────
+
+@app.route('/digital_request/<int:book_id>')
+@login_required
+def digital_request(book_id):
+    conn = get_db_connection()
+    book = conn.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
+
+    if book is None:
+        flash('Book not found!', 'danger')
+        conn.close()
+        return redirect(url_for('index'))
+
+    # Prevent owner from requesting their own book
+    if book['owner_id'] == current_user.id:
+        flash('You cannot request your own book!', 'danger')
+        conn.close()
+        return redirect(url_for('index'))
+
+    # Check if this user already has a pending/accepted request for this book
+    existing = conn.execute('''
+        SELECT * FROM borrow_requests
+        WHERE book_id = ? AND borrower_id = ? AND status IN ("pending", "accepted")
+    ''', (book_id, current_user.id)).fetchone()
+
+    if existing:
+        flash('You already have an active request for this book!', 'info')
+        conn.close()
+        return redirect(url_for('index'))
+
+    # Save the download request — no date/time/location needed for digital
+    conn.execute('''
+        INSERT INTO borrow_requests
+        (book_id, borrower_id, proposed_date, proposed_time, proposed_location, status)
+        VALUES (?, ?, "N/A", "N/A", "Digital Download", ?)
+    ''', (book_id, current_user.id, 'pending'))
+
+    conn.commit()
+    conn.close()
+
+    flash('Download request sent! Wait for the owner to accept.', 'success')
+    return redirect(url_for('index'))
+
+
+# ─── AUTO RETURN DIGITAL BOOKS ───────────────────────────────────────────────
+
+def auto_return_digital_books():
+    conn = get_db_connection()
+
+    # Find digital book transactions older than 14 days
+    # that are still marked as borrowed
+    conn.execute('''
+        UPDATE borrow_transactions
+        SET status = "returned"
+        WHERE status = "borrowed"
+        AND borrow_date IS NOT NULL
+        AND julianday("now") - julianday(borrow_date) > 7
+        AND book_id IN (
+            SELECT id FROM books
+            WHERE type IN ("digital", "Digital")
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
 
 # Delete a book - only the owner can delete their own book
 @app.route('/delete_book/<int:book_id>')
@@ -671,7 +761,88 @@ def edit_book(book_id):
     return render_template('edit_book.html', book=book)
 
 
+# ─── ADMIN DASHBOARD ─────────────────────────────────────────────────────────
 
+@app.route('/admin')
+@login_required
+def admin_dashboard():
+
+    # Only admin can access this page
+    if current_user.role != 'admin':
+        flash('You are not authorized to access this page!', 'danger')
+        return redirect(url_for('index'))
+
+    conn = get_db_connection()
+
+    # Get all books with owner name
+    all_books = conn.execute('''
+        SELECT b.*, u.username as owner_name
+        FROM books b
+        JOIN users u ON b.owner_id = u.id
+        ORDER BY b.added_date DESC
+    ''').fetchall()
+
+    # Get all users except admin
+    all_users = conn.execute('''
+        SELECT * FROM users
+        WHERE role != "admin"
+        ORDER BY created_at DESC
+    ''').fetchall()
+
+    conn.close()
+    return render_template('admin.html',
+                           all_books=all_books,
+                           all_users=all_users)
+
+
+# ─── ADMIN DELETE BOOK ────────────────────────────────────────────────────────
+
+@app.route('/admin/delete_book/<int:book_id>')
+@login_required
+def admin_delete_book(book_id):
+
+    # Only admin can do this
+    if current_user.role != 'admin':
+        flash('Not authorized!', 'danger')
+        return redirect(url_for('index'))
+
+    conn = get_db_connection()
+    conn.execute('DELETE FROM books WHERE id = ?', (book_id,))
+    conn.commit()
+    conn.close()
+
+    flash('Book deleted successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+# ─── ADMIN BLOCK USER ─────────────────────────────────────────────────────────
+
+@app.route('/admin/block_user/<int:user_id>')
+@login_required
+def block_user(user_id):
+
+    # Only admin can do this
+    if current_user.role != 'admin':
+        flash('Not authorized!', 'danger')
+        return redirect(url_for('index'))
+
+    conn = get_db_connection()
+
+    # Get current block status
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+
+    if user['is_blocked'] == 0:
+        # Block the user
+        conn.execute('UPDATE users SET is_blocked = 1 WHERE id = ?', (user_id,))
+        flash(f'{user["username"]} has been blocked!', 'success')
+    else:
+        # Unblock the user
+        conn.execute('UPDATE users SET is_blocked = 0 WHERE id = ?', (user_id,))
+        flash(f'{user["username"]} has been unblocked!', 'success')
+
+    conn.commit()
+    conn.close()
+    return redirect(url_for('admin_dashboard'))
 
 
 

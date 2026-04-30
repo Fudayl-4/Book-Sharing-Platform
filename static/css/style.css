@@ -909,6 +909,114 @@
         border-color: var(--accent-navy);
     }
 
+    /* Download request status pills */
+    .download-request-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+        gap: 10px;
+    }
+
+    .status-pill {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-pill.pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-pill.accepted {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-pill.rejected {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .btn-download-now {
+        display: inline-block;
+        margin-top: 6px;
+        background: var(--primary-blue);
+        color: white;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-download-now:hover {
+        background: var(--accent-navy);
+        color: white;
+    }
+
+    /* Admin page CSS */
+    /* Admin Dashboard */
+    .admin-section {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .admin-section-header {
+        background: var(--primary-blue);
+        padding: 16px 24px;
+        color: white;
+    }
+
+    .admin-section-header h4 {
+        margin: 0;
+        color: white;
+        font-weight: 600;
+    }
+
+    .admin-table-wrapper {
+        overflow-x: auto;
+        padding: 20px;
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .admin-table th {
+        background: #f0f6ff;
+        color: var(--primary-blue);
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.88rem;
+    }
+
+    .admin-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #eee;
+        font-size: 0.9rem;
+        vertical-align: middle;
+    }
+
+    .admin-table tr:hover {
+        background: #f8f9ff;
+    }
+
+    /* Blocked user row */
+    .blocked-row {
+        background: #fff5f5 !important;
+        opacity: 0.8;
+    }
+
     /* Responsive */
     @media (max-width: 1200px) {
         .book-grid {
