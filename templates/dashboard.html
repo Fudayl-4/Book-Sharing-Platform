@@ -43,6 +43,7 @@
             </div>
         </div>
     </nav>
+
     <section class="dashboard">
         <div class="dashboard-pg">
             <div class="container mt-4">
@@ -57,18 +58,15 @@
                 {% endif %}
                 {% endwith %}
 
-                <!-- Incoming Borrow Requests Section -->
+                <!-- ── INCOMING BORROW REQUESTS (owner sees this) ── -->
                 {% if incoming_requests %}
                 <div class="requests-section">
                     <h4 class="requests-heading">
                         <i class="fas fa-bell me-2"></i>
                         Incoming Borrow Requests ({{ incoming_requests|length }})
                     </h4>
-
                     {% for req in incoming_requests %}
                     <div class="request-card">
-
-                        <!-- Book and borrower info -->
                         <div class="request-info">
                             <p class="request-book">
                                 <i class="fas fa-book me-2"></i>
@@ -88,35 +86,75 @@
                                 <i class="fas fa-map-marker-alt me-2"></i>Location: {{ req['proposed_location'] }}
                             </p>
                         </div>
-
-                        <!-- Accept, Reject and Suggest Alternative buttons -->
                         <div class="request-actions">
                             <a href="{{ url_for('accept_request', request_id=req['id']) }}" class="btn-accept">
                                 <i class="fas fa-check me-1"></i>Accept
                             </a>
+                            <!-- Suggest Alternative only for physical books -->
+                            {% if req['proposed_location'] != 'Digital Download' %}
                             <a href="{{ url_for('suggest_alternative', request_id=req['id']) }}" class="btn-suggest">
                                 <i class="fas fa-calendar-alt me-1"></i>Suggest Alternative
                             </a>
+                            {% endif %}
                             <a href="{{ url_for('reject_request', request_id=req['id']) }}" class="btn-reject"
                                 onclick="return confirm('Reject this request?')">
                                 <i class="fas fa-times me-1"></i>Reject
                             </a>
                         </div>
-
                     </div>
                     {% endfor %}
                 </div>
                 {% endif %}
 
+                <!-- ── ALTERNATIVE SUGGESTIONS (borrower sees this) ── -->
+                {% if pending_alternatives %}
+                <div class="requests-section mt-4">
+                    <h4 class="requests-heading">
+                        <i class="fas fa-bell me-2"></i>
+                        Owner Suggested Alternatives ({{ pending_alternatives|length }})
+                    </h4>
+                    {% for alt in pending_alternatives %}
+                    <div class="request-card">
+                        <div class="request-info">
+                            <p class="request-book">
+                                <i class="fas fa-book me-2"></i>
+                                <strong>{{ alt['book_title'] }}</strong>
+                            </p>
+                            <p class="request-meta">
+                                <i class="fas fa-calendar me-2"></i>New Date: {{ alt['proposed_date'] }}
+                            </p>
+                            <p class="request-meta">
+                                <i class="fas fa-clock me-2"></i>New Time: {{ alt['proposed_time'] }}
+                            </p>
+                            <p class="request-meta">
+                                <i class="fas fa-map-marker-alt me-2"></i>New Location: {{ alt['proposed_location'] }}
+                            </p>
+                        </div>
+                        <div class="request-actions">
+                            <a href="{{ url_for('accept_request', request_id=alt['id']) }}" class="btn-accept">
+                                <i class="fas fa-check me-1"></i>Accept
+                            </a>
+                            <a href="{{ url_for('reject_request', request_id=alt['id']) }}" class="btn-reject"
+                                onclick="return confirm('Reject this alternative?')">
+                                <i class="fas fa-times me-1"></i>Reject
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
 
+                <!-- ── MY BOOKS + BORROWED BOOKS ── -->
                 <section class="book-sec">
                     <div class="row mt-4">
+
                         <!-- My Books Section -->
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header"
                                     style="display: flex; justify-content: space-between; align-items: center;">
-                                    <h5 style="margin: 0;"><i class="fas fa-book"></i> My Books ({{ my_books|length }})
+                                    <h5 style="margin: 0;">
+                                        <i class="fas fa-book"></i> My Books ({{ my_books|length }})
                                     </h5>
                                     <a href="{{ url_for('add_book') }}" class="btn-add-book">
                                         <i class="fas fa-plus me-1"></i>Add Book
@@ -141,8 +179,8 @@
                                                     <i class="fas fa-calendar-check me-2"></i>Currently Borrowed
                                                 </p>
                                                 <p class="exchange-meta">
-                                                    <i class="fas fa-user me-2"></i>Borrowed by: <strong>{{
-                                                        book['borrower_name'] }}</strong>
+                                                    <i class="fas fa-user me-2"></i>Borrowed by:
+                                                    <strong>{{ book['borrower_name'] }}</strong>
                                                 </p>
                                                 <p class="exchange-meta">
                                                     <i class="fas fa-calendar me-2"></i>Date: {{ book['proposed_date']
@@ -167,6 +205,7 @@
 
                                             </div>
                                             {% endif %}
+
                                             <!-- Edit and Delete only if book is available -->
                                             {% if book['status']|lower == 'available' %}
                                             <div class="book-actions">
@@ -197,7 +236,9 @@
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5><i class="fas fa-hand-holding"></i> Borrowed Books ({{ borrowed_books|length }})
+                                    <h5>
+                                        <i class="fas fa-hand-holding"></i>
+                                        Borrowed Books ({{ borrowed_books|length }})
                                     </h5>
                                 </div>
                                 <div class="card-body">
@@ -220,7 +261,6 @@
                                                 </p>
                                             </div>
                                             <div>
-                                                <!-- Status badge -->
                                                 {% if dr['status'] == 'pending' %}
                                                 <span class="status-pill pending">
                                                     <i class="fas fa-clock me-1"></i>Pending
@@ -288,19 +328,21 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </section>
-
 
                 <div class="mt-4">
                     <a href="{{ url_for('index') }}" class="btn btn-back-home">
                         <i class="fas fa-home"></i> Back to Home
                     </a>
                 </div>
+
             </div>
         </div>
     </section>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
